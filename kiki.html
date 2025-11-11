@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Tembak Balon HD</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: white;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .game-header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            font-size: 1.2rem;
+        }
+
+        .game-info div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-info span {
+            font-weight: bold;
+            color: #ffcc00;
+            font-size: 1.4rem;
+        }
+
+        .game-canvas-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            background: linear-gradient(to bottom, #1a2980, #26d0ce);
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .crosshair {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 10;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .crosshair::before {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .crosshair::after {
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .game-controls {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        #startBtn {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+        }
+
+        #resetBtn {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .instructions {
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .game-over h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+
+        .game-over p {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+
+        .balloon {
+            position: absolute;
+            border-radius: 50%;
+            box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .balloon.popped {
+            animation: pop 0.3s forwards;
+        }
+
+        @keyframes pop {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                border-radius: 0;
+                height: 100vh;
+            }
+            
+            .game-canvas-container {
+                height: 60vh;
+            }
+            
+            .game-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">Tembak Balon HD</h1>
+        </div>
+        
+        <div class="game-info">
+            <div>
+                <p>Skor</p>
+                <span id="score">0</span>
+            </div>
+            <div>
+                <p>Sisa Waktu</p>
+                <span id="timer">60</span>
+            </div>
+            <div>
+                <p>Balon Tersisa</p>
+                <span id="balloonsLeft">20</span>
+            </div>
+        </div>
+        
+        <div class="game-canvas-container">
+            <canvas id="gameCanvas"></canvas>
+            <div class="crosshair" id="crosshair"></div>
+            
+            <div class="game-over" id="gameOver">
+                <h2>Permainan Selesai!</h2>
+                <p>Skor Akhir: <span id="finalScore">0</span></p>
+                <button id="restartBtn">Main Lagi</button>
+            </div>
+        </div>
+        
+        <div class="game-controls">
+            <button id="startBtn">Mulai Game</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+        
+        <div class="instructions">
+            <p>Klik atau tap balon untuk menembaknya. Dapatkan skor tertinggi sebelum waktu habis!</p>
+        </div>
+    </div>
+
+    <script>
+        // Elemen DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const balloonsLeftElement = document.getElementById('balloonsLeft');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const crosshair = document.getElementById('crosshair');
+
+        // Variabel game
+        let score = 0;
+        let timeLeft = 60;
+        let balloons = [];
+        let gameInterval;
+        let timerInterval;
+        let gameRunning = false;
+        let totalBalloons = 20;
+        let poppedBalloons = 0;
+
+        // Ukuran canvas
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        // Inisialisasi game
+        function initGame() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Event listener untuk tombol
+            startBtn.addEventListener('click', startGame);
+            resetBtn.addEventListener('click', resetGame);
+            restartBtn.addEventListener('click', restartGame);
+            
+            // Event listener untuk klik/tap pada canvas
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('mousemove', updateCrosshair);
+            canvas.addEventListener('mouseenter', showCrosshair);
+            canvas.addEventListener('mouseleave', hideCrosshair);
+            
+            // Untuk perangkat sentuh
+            canvas.addEventListener('touchstart', handleCanvasClick);
+        }
+
+        // Tampilkan crosshair
+        function showCrosshair() {
+            crosshair.style.display = 'block';
+        }
+
+        // Sembunyikan crosshair
+        function hideCrosshair() {
+            crosshair.style.display = 'none';
+        }
+
+        // Perbarui posisi crosshair
+        function updateCrosshair(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            crosshair.style.left = x + 'px';
+            crosshair.style.top = y + 'px';
+        }
+
+        // Mulai game
+        function startGame() {
+            if (gameRunning) return;
+            
+            gameRunning = true;
+            score = 0;
+            timeLeft = 60;
+            poppedBalloons = 0;
+            balloons = [];
+            
+            scoreElement.textContent = score;
+            timerElement.textContent = timeLeft;
+            balloonsLeftElement.textContent = totalBalloons;
+            
+            // Buat balon awal
+            createInitialBalloons();
+            
+            // Mulai timer
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            // Mulai game loop
+            gameInterval = setInterval(gameLoop, 1000 / 60); // 60 FPS
+            
+            // Sembunyikan layar game over
+            gameOverScreen.style.display = 'none';
+        }
+
+        // Reset game
+        function resetGame() {
+            clearInterval(gameInterval);
+            clearInterval(timerInterval);
+            gameRunning = false;
+            score = 0;
+            timeLeft = 60;
+            poppedBalloons = 0;
+            balloons = [];
+            
+            scoreElement.textContent = score;
+            timerElement.textContent = timeLeft;
+            balloonsLeftElement.textContent = totalBalloons;
+            
+            // Bersihkan canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Sembunyikan layar game over
+            gameOverScreen.style.display = 'none';
+        }
+
+        // Restart game
+        function restartGame() {
+            resetGame();
+            startGame();
+        }
+
+        // Buat balon awal
+        function createInitialBalloons() {
+            for (let i = 0; i < 8; i++) {
+                createBalloon();
+            }
+        }
+
+        // Buat balon baru
+        function createBalloon() {
+            if (balloons.length >= 15 || poppedBalloons >= totalBalloons) return;
+            
+            const size = Math.random() * 40 + 30; // Ukuran antara 30-70
+            const x = Math.random() * (canvas.width - size);
+            const y = canvas.height + size;
+            
+            // Warna acak untuk balon
+            const colors = [
+                '#FF5252', '#FF4081', '#E040FB', '#7C4DFF', 
+                '#536DFE', '#448AFF', '#40C4FF', '#18FFFF',
+                '#64FFDA', '#69F0AE', '#B2FF59', '#EEFF41', 
+                '#FFFF00', '#FFD740', '#FFAB40', '#FF6E40'
+            ];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const balloon = {
+                x: x,
+                y: y,
+                size: size,
+                color: color,
+                speed: Math.random() * 2 + 1, // Kecepatan antara 1-3
+                popped: false
+            };
+            
+            balloons.push(balloon);
+        }
+
+        // Update timer
+        function updateTimer() {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            // Bersihkan canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Gambar latar belakang
+            drawBackground();
+            
+            // Update dan gambar balon
+            updateBalloons();
+            
+            // Buat balon baru secara acak
+            if (Math.random() < 0.05 && balloons.length < 15 && poppedBalloons < totalBalloons) {
+                createBalloon();
+            }
+            
+            // Perbarui jumlah balon tersisa
+            balloonsLeftElement.textContent = totalBalloons - poppedBalloons;
+            
+            // Cek jika semua balon sudah ditembak
+            if (poppedBalloons >= totalBalloons) {
+                endGame();
+            }
+        }
+
+        // Gambar latar belakang
+        function drawBackground() {
+            // Gradien biru untuk langit
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1a2980');
+            gradient.addColorStop(1, '#26d0ce');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Gambar awan
+            drawClouds();
+        }
+
+        // Gambar awan
+        function drawClouds() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            
+            // Awan 1
+            ctx.beginPath();
+            ctx.arc(100, 80, 30, 0, Math.PI * 2);
+            ctx.arc(140, 70, 40, 0, Math.PI * 2);
+            ctx.arc(180, 80, 30, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Awan 2
+            ctx.beginPath();
+            ctx.arc(500, 120, 25, 0, Math.PI * 2);
+            ctx.arc(540, 110, 35, 0, Math.PI * 2);
+            ctx.arc(580, 120, 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Awan 3
+            ctx.beginPath();
+            ctx.arc(300, 150, 20, 0, Math.PI * 2);
+            ctx.arc(330, 140, 30, 0, Math.PI * 2);
+            ctx.arc(360, 150, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Update balon
+        function updateBalloons() {
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                const balloon = balloons[i];
+                
+                if (balloon.popped) {
+                    // Hapus balon yang sudah ditembak setelah animasi selesai
+                    balloons.splice(i, 1);
+                    continue;
+                }
+                
+                // Gerakkan balon ke atas
+                balloon.y -= balloon.speed;
+                
+                // Gambar balon
+                drawBalloon(balloon);
+                
+                // Hapus balon jika sudah keluar dari layar
+                if (balloon.y + balloon.size < 0) {
+                    balloons.splice(i, 1);
+                }
+            }
+        }
+
+        // Gambar balon
+        function drawBalloon(balloon) {
+            // Gambar bentuk balon
+            ctx.beginPath();
+            ctx.arc(balloon.x, balloon.y, balloon.size, 0, Math.PI * 2);
+            ctx.fillStyle = balloon.color;
+            ctx.fill();
+            
+            // Tambahkan highlight untuk efek 3D
+            ctx.beginPath();
+            ctx.arc(balloon.x - balloon.size/3, balloon.y - balloon.size/3, balloon.size/4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.fill();
+            
+            // Gambar tali balon
+            ctx.beginPath();
+            ctx.moveTo(balloon.x, balloon.y + balloon.size);
+            ctx.lineTo(balloon.x, balloon.y + balloon.size + 15);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Handle klik pada canvas
+        function handleCanvasClick(e) {
+            if (!gameRunning) return;
+            
+            // Dapatkan posisi klik
+            const rect = canvas.getBoundingClientRect();
+            let x, y;
+            
+            if (e.type === 'touchstart') {
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+                // Mencegah zoom pada perangkat sentuh
+                e.preventDefault();
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+            
+            // Cek apakah ada balon yang diklik
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                const balloon = balloons[i];
+                
+                if (balloon.popped) continue;
+                
+                // Hitung jarak antara klik dan pusat balon
+                const distance = Math.sqrt(
+                    Math.pow(x - balloon.x, 2) + 
+                    Math.pow(y - balloon.y, 2)
+                );
+                
+                // Jika klik mengenai balon
+                if (distance <= balloon.size) {
+                    // Tandai sebagai ditembak
+                    balloon.popped = true;
+                    
+                    // Tambah skor
+                    score += 10;
+                    scoreElement.textContent = score;
+                    
+                    // Tambah jumlah balon yang ditembak
+                    poppedBalloons++;
+                    
+                    // Efek suara (simulasi)
+                    playPopSound();
+                    
+                    // Hentikan loop setelah menemukan balon yang diklik
+                    break;
+                }
+            }
+        }
+
+        // Efek suara tembakan (simulasi)
+        function playPopSound() {
+            // Dalam implementasi nyata, Anda akan memutar file audio
+            // Di sini kita hanya membuat osilasi audio sederhana
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 200;
+                gainNode.gain.value = 0.1;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {
+                // Fallback jika Web Audio API tidak tersedia
+                console.log("Pop!");
+            }
+        }
+
+        // Akhiri game
+        function endGame() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            clearInterval(timerInterval);
+            
+            // Tampilkan layar game over
+            gameOverScreen.style.display = 'flex';
+            finalScoreElement.textContent = score;
+        }
+
+        // Inisialisasi game saat halaman dimuat
+        window.onload = initGame;
+    </script>
+</body>
+</html>
